@@ -1,6 +1,5 @@
 module Snake where
 
-import Debug
 import Keyboard
 import List
 import Text
@@ -49,24 +48,15 @@ stepGame input gameState =
         newSnake     = { segments=newSegments, direction=newDirection }
     in { gameState | snake <- newSnake }
 
-drawSnake (w, h) { segments } =
-  segments
-  |> List.map (\(x, y) -> rect segmentDim segmentDim 
-                          |> filled yellow
-                          |> move (x, y))
-  |> collage w h
-
-drawGame : (Int, Int) -> GameState -> Element
-drawGame (w, h) gameState =
-  drawSnake (w, h) gameState.snake
-
-drawBackground (w, h) =
-  collage w h <| [ rect (toFloat w) (toFloat h) |> filled (rgb 0 0 0) ]
-
 display : (Int,Int) -> GameState -> Element
 display (w, h) gameState = 
-  layers [ drawBackground (w, h)
-         , drawGame (w, h) gameState ]
+  let snake = 
+        gameState.snake.segments 
+        |> List.map (\(x, y) -> rect segmentDim segmentDim 
+                                |> filled yellow
+                                |> move (x, y))
+      background = rect (toFloat w) (toFloat h) |> filled (rgb 0 0 0)
+  in collage w h (background::snake)
 
 input : Signal { x:Int, y:Int }
 input = sampleOn (fps 20) Keyboard.arrows
