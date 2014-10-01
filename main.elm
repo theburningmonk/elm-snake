@@ -1,69 +1,75 @@
 module Snake where
 
+import Debug
 import Keyboard
 import List
 import Text
 import Window
 
+segmentDim = 15.0
+startSegments = [ 0.0..5.0 ] |> List.map (\x -> (x * segmentDim, 0))
+
 txt msg = msg |> toText |> Text.color white |> Text.monospace |> leftAligned |> toForm
 
 data Direction = Left | Right | Up | Down
-fromArrow { x, y } =
-  case (x, y) of
-    (0,  0)   -> Nothing
-    (-1, _)   -> Just Left
-    (1,  _)   -> Just Right
-    (_, -1)   -> Just Down
-    (_, 1 )   -> Just Up
-
-type Snake     = { segments:[(Int, Int)], direction:Direction }
-type GameState = { cherry:Maybe (Int, Int), snake:Snake }
+type Snake     = { segments:[(Float, Float)], direction:Direction }
+type GameState = { cherry:Maybe (Float, Float), snake:Snake }
 
 defaultGame : GameState
 defaultGame = { 
   cherry = Nothing, 
   snake  = { segments=[(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)], direction=Right } }
 
-stepGame : (Maybe Direction) -> GameState -> GameState
-stepGame newDirection gameState =
+getNewDirection : { x:Int, y:Int } -> Direction -> Direction
+getNewDirection { x, y } currentDir =
+  if | x == 0  && y == 0              -> currentDir
+     | x == -1 && currentDir == Right -> currentDir
+     | x == 1  && currentDir == Left  -> currentDir
+     | y == -1 && currentDir == Up    -> currentDir
+     | y == 1  && currentDir == Down  -> currentDir
+     | x == -1 -> Left
+     | x == 1  -> Right
+     | y == -1 -> Down
+     | y == 1  -> Up
+     
+getNewSegment (x, y) direction =
+  case direction of
+    Up    -> (x, y+segmentDim)
+    Down  -> (x, y-segmentDim)
+    Left  -> (x-segmentDim, y)
+    Right -> (x+segmentDim, y)
+     
+stepGame : { x:Int, y:Int } -> GameState -> GameState
+stepGame input gameState =
     let { segments, direction } = .snake gameState
-        (hdx, hdy) = List.head segments
-        count      = List.length segments
-        (newSeg, newDir) = 
-            case (newDirection, direction) of
-                -- ignore direction changes in reverse
-                (Just Up, Down)    -> ((hdx, hdy-1), Down)
-                (Just Down, Up)    -> ((hdx, hdy+1), Up)
-                (Just Left, Right) -> ((hdx+1, hdy), Right)
-                (Just Right, Left) -> ((hdx-1, hdy), Left)
-                -- change direction
-                (Just Up,    _)    -> ((hdx, hdy+1), direction)
-                (Just Down,  _)    -> ((hdx, hdy-1), direction)
-                (Just Left,  _)    -> ((hdx-1, hdy), direction)
-                (Just Right, _)    -> ((hdx+1, hdy), direction)
-                -- continue current direction
-                (Nothing, Down)    -> ((hdx, hdy+1), direction)
-                (Nothing, Up)      -> ((hdx, hdy-1), direction)
-                (Nothing, Right)   -> ((hdx+1, hdy), direction)
-                (Nothing, Left)    -> ((hdx-1, hdy), direction)
-        
-        newSegments = newSeg::(List.take (count-1) segments)
-        newSnake    = { segments=newSegments, direction=newDir }
+        newDirection = getNewDirection input direction
+        newSegment   = getNewSegment (List.head segments) newDirection        
+        count        = List.length segments
+        newSegments  = newSegment::(List.take (count-1) segments)
+        newSnake     = { segments=newSegments, direction=newDirection }
     in { gameState | snake <- newSnake }
+
+drawSnake (w, h) { segments } =
+  segments
+  |> List.map (\(x, y) -> rect segmentDim segmentDim 
+                          |> filled yellow
+                          |> move (x, y))
+  |> collage w h
+
+drawGame : (Int, Int) -> GameState -> Element
+drawGame (w, h) gameState =
+  drawSnake (w, h) gameState.snake
 
 drawBackground (w, h) =
   collage w h <| [ rect (toFloat w) (toFloat h) |> filled (rgb 0 0 0) ]
 
-drawGame : (Int, Int) -> GameState -> Element
-drawGame (w, h) gameState =
-  collage w h [ txt "game over" ]
-
 display : (Int,Int) -> GameState -> Element
-display dim gameState = layers [ drawBackground dim
-                               , drawGame dim gameState ]
+display (w, h) gameState = 
+  layers [ drawBackground (w, h)
+         , drawGame (w, h) gameState ]
 
-input : Signal (Maybe Direction)
-input = sampleOn (fps 45) (fromArrow <~ Keyboard.arrows)
+input : Signal { x:Int, y:Int }
+input = sampleOn (fps 60) Keyboard.arrows
 
 gameState = foldp stepGame defaultGame input
 
