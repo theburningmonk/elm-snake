@@ -7,7 +7,7 @@ import Text
 import Window
 
 segmentDim = 15.0
-startSegments = [ 0.0..5.0 ] |> List.map (\x -> (x * segmentDim, 0))
+startSegments = [ 0.0..8.0 ] |> List.reverse |> List.map (\x -> (x * segmentDim, 0))
 
 txt msg = msg |> toText |> Text.color white |> Text.monospace |> leftAligned |> toForm
 
@@ -18,7 +18,7 @@ type GameState = { cherry:Maybe (Float, Float), snake:Snake }
 defaultGame : GameState
 defaultGame = { 
   cherry = Nothing, 
-  snake  = { segments=[(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)], direction=Right } }
+  snake  = { segments=startSegments, direction=Right } }
 
 getNewDirection : { x:Int, y:Int } -> Direction -> Direction
 getNewDirection { x, y } currentDir =
@@ -69,7 +69,7 @@ display (w, h) gameState =
          , drawGame (w, h) gameState ]
 
 input : Signal { x:Int, y:Int }
-input = sampleOn (fps 60) Keyboard.arrows
+input = sampleOn (fps 20) Keyboard.arrows
 
 gameState = foldp stepGame defaultGame input
 
