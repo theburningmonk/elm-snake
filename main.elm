@@ -1,6 +1,7 @@
 module Snake where
 
 import Keyboard
+import List
 import Text
 import Window
 
@@ -29,24 +30,26 @@ stepGame newDirection gameState =
         (hdx, hdy) = List.head segments
         count      = List.length segments
         (newSeg, newDir) = 
-			case (newDirection, direction) of
-				-- ignore direction changes in reverse
-				Just Up, Down 	 -> ((hdx, hdy-1), Down)
-				Just Down, Up	 -> ((hdx, hdy+1), Up)
-				Just Left, Right -> ((hdx+1, hdy), Right)
-				Just Right, Left -> ((hdx-1, hdy), Left)
-				-- change direction
-				Just Up,    _	 -> ((hdx, hdy+1), direction)
-				Just Down,  _	 -> ((hdx, hdy-1), direction)
-				Just Left,  _	 -> ((hdx-1, hdy), direction)
-				Just Right, _	 -> ((hdx+1, hdy), direction)
-				-- continue current direction
-				Nothing, Down    -> ((hdx, hdy+1), direction)
-				Nothing, Up      -> ((hdx, hdy-1), direction)
-				Nothing, Right   -> ((hdx+1, hdy), direction)
-				Nothing, Left    -> ((hdx-1, hdy), direction)
-	    newSegments = newSeg::(List.take (count-1) segments)
-    in { Nothing, { newSegments, newDir } }
+            case (newDirection, direction) of
+                -- ignore direction changes in reverse
+                (Just Up, Down)    -> ((hdx, hdy-1), Down)
+                (Just Down, Up)    -> ((hdx, hdy+1), Up)
+                (Just Left, Right) -> ((hdx+1, hdy), Right)
+                (Just Right, Left) -> ((hdx-1, hdy), Left)
+                -- change direction
+                (Just Up,    _)    -> ((hdx, hdy+1), direction)
+                (Just Down,  _)    -> ((hdx, hdy-1), direction)
+                (Just Left,  _)    -> ((hdx-1, hdy), direction)
+                (Just Right, _)    -> ((hdx+1, hdy), direction)
+                -- continue current direction
+                (Nothing, Down)    -> ((hdx, hdy+1), direction)
+                (Nothing, Up)      -> ((hdx, hdy-1), direction)
+                (Nothing, Right)   -> ((hdx+1, hdy), direction)
+                (Nothing, Left)    -> ((hdx-1, hdy), direction)
+        
+        newSegments = newSeg::(List.take (count-1) segments)
+        newSnake    = { segments=newSegments, direction=newDir }
+    in { gameState | snake <- newSnake }
 
 drawBackground (w, h) =
   collage w h <| [ rect (toFloat w) (toFloat h) |> filled (rgb 0 0 0) ]
