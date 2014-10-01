@@ -13,9 +13,7 @@ txt msg = msg |> toText |> Text.color white |> Text.monospace |> leftAligned |> 
 data Direction = Left | Right | Up | Down
 type Snake     = { segments:[(Float, Float)], direction:Direction }
 type GameState = { cherry:Maybe (Float, Float), snake:Snake }
-
-defaultGame : GameState
-defaultGame = { 
+defaultGameState = { 
   cherry = Nothing, 
   snake  = { segments=startSegments, direction=Right } }
 
@@ -61,6 +59,6 @@ display (w, h) gameState =
 input : Signal { x:Int, y:Int }
 input = sampleOn (fps 20) Keyboard.arrows
 
-gameState = foldp stepGame defaultGame input
+gameState = foldp stepGame defaultGameState input
 
 main = lift2 display Window.dimensions gameState
