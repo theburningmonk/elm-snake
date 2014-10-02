@@ -6,16 +6,15 @@ import Text
 import Window
 
 segmentDim = 15.0
-startSegments = [ 0.0..8.0 ] |> List.reverse |> List.map (\x -> (x * segmentDim, 0))
 
 txt msg = msg |> toText |> Text.color white |> Text.monospace |> leftAligned |> toForm
 
 data Direction = Left | Right | Up | Down
 type Snake     = { segments:[(Float, Float)], direction:Direction }
-type GameState = { cherry:Maybe (Float, Float), snake:Snake }
-defaultGameState = { 
-  cherry = Nothing, 
-  snake  = { segments=startSegments, direction=Right } }
+defaultSnake   = { segments=[ 0.0..8.0 ] |> List.reverse |> List.map (\x -> (x * segmentDim, 0)),    
+                   direction=Right }
+data GameState = NotStarted
+               | Started Snake
 
 getNewDirection : { x:Int, y:Int } -> Direction -> Direction
 getNewDirection { x, y } currentDir =
@@ -38,27 +37,35 @@ getNewSegment (x, y) direction =
      
 stepGame : { x:Int, y:Int } -> GameState -> GameState
 stepGame input gameState =
-    let { segments, direction } = .snake gameState
-        newDirection = getNewDirection input direction
-        newSegment   = getNewSegment (List.head segments) newDirection        
-        count        = List.length segments
-        newSegments  = newSegment::(List.take (count-1) segments)
-        newSnake     = { segments=newSegments, direction=newDirection }
-    in { gameState | snake <- newSnake }
+  case gameState of
+    NotStarted -> if input.x == 0 && input.y == 0 then gameState else Started defaultSnake
+    Started snake ->
+      let { segments, direction } = snake
+          newDirection = getNewDirection input direction
+          newHead      = getNewSegment (List.head segments) newDirection
+          newTail      = List.take (List.length segments-1) segments
+          isGameOver   = List.any (\t -> t == newHead) newTail
+      in 
+        if isGameOver then NotStarted
+        else Started { segments = newHead::newTail, direction = newDirection }
 
 display : (Int,Int) -> GameState -> Element
 display (w, h) gameState = 
-  let snake = 
-        gameState.snake.segments 
-        |> List.map (\(x, y) -> rect segmentDim segmentDim 
-                                |> filled yellow
-                                |> move (x, y))
-      background = rect (toFloat w) (toFloat h) |> filled (rgb 0 0 0)
-  in collage w h (background::snake)
-
+  let background = rect (toFloat w) (toFloat h) |> filled (rgb 0 0 0)
+      content = 
+        case gameState of
+          NotStarted -> [ txt "Press any arrow key to start." ]
+          Started snake -> 
+            snake.segments
+            |> List.map (\(x, y) -> rect segmentDim segmentDim 
+                                    |> filled yellow
+                                    |> move (x, y))
+      
+  in collage w h (background::content)
+  
 input : Signal { x:Int, y:Int }
 input = sampleOn (fps 20) Keyboard.arrows
 
-gameState = foldp stepGame defaultGameState input
+gameState = foldp stepGame NotStarted input
 
-main = lift2 display Window.dimensions gameState
+main = display <~ Window.dimensions ~ gameState
