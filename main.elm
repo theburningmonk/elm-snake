@@ -47,9 +47,8 @@ stepGame input gameState =
           newHead      = getNewSegment (List.head segments) newDirection
           newTail      = List.take (List.length segments-1) segments
           isGameOver   = List.any (\t -> t == newHead) newTail
-      in 
-        if isGameOver then NotStarted
-        else Started { segments = newHead::newTail, direction = newDirection }
+      in if isGameOver then NotStarted
+         else Started { segments = newHead::newTail, direction = newDirection }
 
 display : (Int,Int) -> GameState -> Element
 display (w, h) gameState = 
@@ -62,7 +61,6 @@ display (w, h) gameState =
             |> List.map (\(x, y) -> rect segmentDim segmentDim 
                                     |> filled yellow
                                     |> move (x, y))
-      
   in collage w h (background::content)
   
 arrows = Arrow <~ Keyboard.arrows
