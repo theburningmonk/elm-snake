@@ -35,8 +35,8 @@ getNewSegment (x, y) direction =
     Left  -> (x-segmentDim, y)
     Right -> (x+segmentDim, y)
      
-stepGame : UserInput -> GameState -> GameState
-stepGame input gameState =
+stepGame : (UserInput, (Int, Int)) -> GameState -> GameState
+stepGame (input, (w, h)) gameState =
   case gameState of
     NotStarted -> if input == Space then Started defaultSnake else gameState
     Started { segments, direction } ->
@@ -46,7 +46,12 @@ stepGame input gameState =
           newDirection = getNewDirection arrow direction
           newHead      = getNewSegment (List.head segments) newDirection
           newTail      = List.take (List.length segments-1) segments
-          isGameOver   = List.any (\t -> t == newHead) newTail
+          isGameOver   = 
+            List.any (\t -> t == newHead) newTail -- eat itself
+            || fst newHead > (toFloat w / 2)  -- hit bottom
+            || snd newHead > (toFloat h / 2)  -- hit top
+            || fst newHead < (toFloat -w / 2) -- hit left
+            || snd newHead < (toFloat -h / 2) -- hit right
       in if isGameOver then NotStarted
          else Started { segments = newHead::newTail, direction = newDirection }
 
@@ -58,15 +63,16 @@ display (w, h) gameState =
           NotStarted -> [ txt "Press SPACE to start." ]
           Started snake -> 
             snake.segments
-            |> List.map (\(x, y) -> rect segmentDim segmentDim 
-                                    |> filled yellow
-                                    |> move (x, y))
+            |> List.map (\(x, y) -> 
+                 rect segmentDim segmentDim |> filled yellow |> move (x, y))
   in collage w h (background::content)
   
 arrows = Arrow <~ Keyboard.arrows
 spaces = (\t -> Space) <~ (keepIf (\t -> t) False Keyboard.space)
-input  = sampleOn (fps 20) (merge arrows spaces)
 
-gameState = foldp stepGame NotStarted input
+userInput : Signal UserInput
+userInput = sampleOn (fps 20) (merge arrows spaces)
+
+gameState = (,) <~ userInput ~ Window.dimensions |> foldp stepGame NotStarted
 
 main = display <~ Window.dimensions ~ gameState
