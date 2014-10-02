@@ -9,12 +9,12 @@ segmentDim = 15.0
 
 txt msg = msg |> toText |> Text.color white |> Text.monospace |> leftAligned |> toForm
 
+data UserInput = Arrow { x:Int, y:Int } | Space
 data Direction = Left | Right | Up | Down
 type Snake     = { segments:[(Float, Float)], direction:Direction }
-defaultSnake   = { segments=[ 0.0..8.0 ] |> List.reverse |> List.map (\x -> (x * segmentDim, 0)),    
-                   direction=Right }
-data GameState = NotStarted
-               | Started Snake
+defaultSnake   = { segments  = [ 0.0..8.0 ] |> List.reverse |> List.map (\x -> (x * segmentDim, 0)),
+                   direction = Right }
+data GameState = NotStarted | Started Snake
 
 getNewDirection : { x:Int, y:Int } -> Direction -> Direction
 getNewDirection { x, y } currentDir =
@@ -35,13 +35,16 @@ getNewSegment (x, y) direction =
     Left  -> (x-segmentDim, y)
     Right -> (x+segmentDim, y)
      
-stepGame : { x:Int, y:Int } -> GameState -> GameState
+stepGame : UserInput -> GameState -> GameState
 stepGame input gameState =
   case gameState of
-    NotStarted -> if input.x == 0 && input.y == 0 then gameState else Started defaultSnake
+    NotStarted -> if input == Space then Started defaultSnake else gameState
     Started snake ->
-      let { segments, direction } = snake
-          newDirection = getNewDirection input direction
+      let arrow        = case input of
+                           Arrow arrow -> arrow
+                           _           -> { x=0, y=0 }
+          { segments, direction } = snake
+          newDirection = getNewDirection arrow direction
           newHead      = getNewSegment (List.head segments) newDirection
           newTail      = List.take (List.length segments-1) segments
           isGameOver   = List.any (\t -> t == newHead) newTail
@@ -54,7 +57,7 @@ display (w, h) gameState =
   let background = rect (toFloat w) (toFloat h) |> filled (rgb 0 0 0)
       content = 
         case gameState of
-          NotStarted -> [ txt "Press any arrow key to start." ]
+          NotStarted -> [ txt "Press SPACE to start." ]
           Started snake -> 
             snake.segments
             |> List.map (\(x, y) -> rect segmentDim segmentDim 
@@ -63,8 +66,9 @@ display (w, h) gameState =
       
   in collage w h (background::content)
   
-input : Signal { x:Int, y:Int }
-input = sampleOn (fps 20) Keyboard.arrows
+arrows = Arrow <~ Keyboard.arrows
+spaces = (\t -> Space) <~ (keepIf (\t -> t) False Keyboard.space)
+input  = sampleOn (fps 20) (merge arrows spaces)
 
 gameState = foldp stepGame NotStarted input
 
