@@ -39,11 +39,10 @@ stepGame : UserInput -> GameState -> GameState
 stepGame input gameState =
   case gameState of
     NotStarted -> if input == Space then Started defaultSnake else gameState
-    Started snake ->
+    Started { segments, direction } ->
       let arrow        = case input of
                            Arrow arrow -> arrow
                            _           -> { x=0, y=0 }
-          { segments, direction } = snake
           newDirection = getNewDirection arrow direction
           newHead      = getNewSegment (List.head segments) newDirection
           newTail      = List.take (List.length segments-1) segments
