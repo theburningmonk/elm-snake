@@ -38,6 +38,9 @@ getNewSegment (x, y) direction =
     Down  -> (x, y-segmentDim)
     Left  -> (x-segmentDim, y)
     Right -> (x+segmentDim, y)
+
+isOverlap (snakeX, snakeY) (cherryX, cherryY) =
+  False
      
 stepGame : (UserInput, (Int, Int), [Float]) -> GameState -> GameState
 stepGame (input, (w, h), [rand1, rand2]) gameState =
@@ -49,16 +52,20 @@ stepGame (input, (w, h), [rand1, rand2]) gameState =
                     _           -> { x=0, y=0 }
           newDirection = getNewDirection arrow direction
           newHead      = getNewSegment (List.head segments) newDirection
-          newTail      = List.take (List.length segments-1) segments
+          ateCherry    = case cherry of
+                           Nothing -> False
+                           Just cherryCentre -> isOverlap newHead cherryCentre
+          newCherry    = if ateCherry then Nothing
+                         else if cherry == Nothing && rand1 <= 0.5 
+                              then Just ((rand1 * toFloat w) - (toFloat w /2) , (rand2 * toFloat h) - (toFloat h / 2)) 
+                              else cherry
+          newTail      = if ateCherry then segments else List.take (List.length segments-1) segments
           isGameOver   = 
             List.any (\t -> t == newHead) newTail -- eat itself
             || fst newHead > (toFloat w / 2)  -- hit bottom
             || snd newHead > (toFloat h / 2)  -- hit top
             || fst newHead < (toFloat -w / 2) -- hit left
             || snd newHead < (toFloat -h / 2) -- hit right
-          newCherry    = if cherry == Nothing && rand1 <= 0.5 
-                         then Just ((rand1 * toFloat w) - (toFloat w /2) , (rand2 * toFloat h) - (toFloat h / 2)) 
-                         else cherry
       in if isGameOver then NotStarted
          else Started ({ segments = newHead::newTail, direction = newDirection }, newCherry)
               |> Debug.watch "state"
