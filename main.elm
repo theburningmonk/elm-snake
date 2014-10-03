@@ -1,6 +1,5 @@
 module Snake where
 
-import Debug
 import Keyboard
 import List
 import Random
@@ -40,7 +39,9 @@ getNewSegment (x, y) direction =
     Right -> (x+segmentDim, y)
 
 isOverlap (snakeX, snakeY) (cherryX, cherryY) =
-  False
+  let (xd, yd) = (cherryX - snakeX, cherryY - snakeY)
+      distance = sqrt(xd * xd + yd * yd)
+  in distance <= (cherryRadius * 2)
      
 stepGame : (UserInput, (Int, Int), [Float]) -> GameState -> GameState
 stepGame (input, (w, h), [rand1, rand2]) gameState =
@@ -68,7 +69,6 @@ stepGame (input, (w, h), [rand1, rand2]) gameState =
             || snd newHead < (toFloat -h / 2) -- hit right
       in if isGameOver then NotStarted
          else Started ({ segments = newHead::newTail, direction = newDirection }, newCherry)
-              |> Debug.watch "state"
 
 display : (Int,Int) -> GameState -> Element
 display (w, h) gameState = 
@@ -93,6 +93,6 @@ userInput = sampleOn (fps 20) (merge arrows spaces)
 
 chances = Random.floatList <| Random.range 2 2 (every <| second)
 
-gameState = (,,) <~ userInput ~ Window.dimensions ~ chances |> foldp (Debug.watch "input" >> stepGame) NotStarted
+gameState = (,,) <~ userInput ~ Window.dimensions ~ chances |> foldp stepGame NotStarted
 
 main = display <~ Window.dimensions ~ gameState
