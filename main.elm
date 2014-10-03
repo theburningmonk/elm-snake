@@ -39,8 +39,8 @@ getNewSegment (x, y) direction =
     Left  -> (x-segmentDim, y)
     Right -> (x+segmentDim, y)
      
-stepGame : (UserInput, (Int, Int), Float, Float) -> GameState -> GameState
-stepGame (input, (w, h), rand1, rand2) gameState =
+stepGame : (UserInput, (Int, Int), [Float]) -> GameState -> GameState
+stepGame (input, (w, h), [rand1, rand2]) gameState =
   case gameState of
     NotStarted -> if input == Space then Started (defaultSnake, Nothing) else gameState
     Started ({ segments, direction }, cherry) ->
@@ -57,7 +57,7 @@ stepGame (input, (w, h), rand1, rand2) gameState =
             || fst newHead < (toFloat -w / 2) -- hit left
             || snd newHead < (toFloat -h / 2) -- hit right
           newCherry    = if cherry == Nothing && rand1 <= 0.5 
-                         then Just (0, 0) 
+                         then Just ((rand1 * toFloat w) - (toFloat w /2) , (rand2 * toFloat h) - (toFloat h / 2)) 
                          else cherry
       in if isGameOver then NotStarted
          else Started ({ segments = newHead::newTail, direction = newDirection }, newCherry)
@@ -80,14 +80,12 @@ display (w, h) gameState =
   in collage w h (background::content)
   
 arrows = Arrow <~ Keyboard.arrows
-spaces = (\t -> Space) <~ (keepIf (\t -> t) False Keyboard.space)
+spaces : Signal UserInput
+spaces = (\flag -> if flag then Space else Arrow { x=0, y=0 }) <~ Keyboard.space
 userInput = sampleOn (fps 20) (merge arrows spaces)
 
-chances : Signal [Float]
-chances   = Random.floatList <| sampleOn (every second) (constant 2) -- prob of spawning cherry
+chances = Random.floatList <| Random.range 2 2 (every <| second)
 
-chance = Random.float (every second)
-
-gameState = (,,,) <~ userInput ~ Window.dimensions ~ chance ~ chance |> foldp (Debug.watch "input" >> stepGame) NotStarted
+gameState = (,,) <~ userInput ~ Window.dimensions ~ chances |> foldp (Debug.watch "input" >> stepGame) NotStarted
 
 main = display <~ Window.dimensions ~ gameState
