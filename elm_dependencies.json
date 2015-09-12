@@ -1,11 +1,11 @@
 {
     "version": "0.1",
-    "summary": "concise, helpful summary of your project",
+    "summary": "snake game in Elm",
     "description": "full description of this project, describe your use case",
     "license": "BSD3",
     "exposed-modules": [],
-    "elm-version": "0.13",
+    "elm-version": "0.15.1",
     "dependencies": {
     },
-    "repository": "https://github.com/USER/PROJECT.git"
+    "repository": "https://github.com/theburningmonk/elm-snake.git"
 }
