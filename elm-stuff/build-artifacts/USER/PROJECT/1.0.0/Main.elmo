@@ -1,0 +1,448 @@
+Elm.Main = Elm.Main || {};
+Elm.Main.make = function (_elm) {
+   "use strict";
+   _elm.Main = _elm.Main || {};
+   if (_elm.Main.values)
+   return _elm.Main.values;
+   var _op = {},
+   _N = Elm.Native,
+   _U = _N.Utils.make(_elm),
+   _L = _N.List.make(_elm),
+   $moduleName = "Main",
+   $Basics = Elm.Basics.make(_elm),
+   $Color = Elm.Color.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Graphics$Collage = Elm.Graphics.Collage.make(_elm),
+   $Graphics$Element = Elm.Graphics.Element.make(_elm),
+   $Keyboard = Elm.Keyboard.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Random = Elm.Random.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $Text = Elm.Text.make(_elm),
+   $Time = Elm.Time.make(_elm),
+   $Window = Elm.Window.make(_elm);
+   var spawnCherry = F3(function (_v0,
+   randW,
+   randH) {
+      return function () {
+         switch (_v0.ctor)
+         {case "_Tuple2":
+            return function () {
+                 var y = randH * $Basics.toFloat(_v0._1) - $Basics.toFloat(_v0._1) / 2;
+                 var x = randW * $Basics.toFloat(_v0._0) - $Basics.toFloat(_v0._0) / 2;
+                 return $Maybe.Just({ctor: "_Tuple2"
+                                    ,_0: x
+                                    ,_1: y});
+              }();}
+         _U.badCase($moduleName,
+         "between lines 161 and 163");
+      }();
+   });
+   var genRandoms = F2(function (n,
+   seed) {
+      return A2($Random.generate,
+      A2($Random.list,
+      n,
+      A2($Random.$float,0,1)),
+      seed);
+   });
+   var isGameOver = F3(function (_v4,
+   newHead,
+   newTail) {
+      return function () {
+         switch (_v4.ctor)
+         {case "_Tuple2":
+            return A2($List.any,
+              function (t) {
+                 return _U.eq(t,newHead);
+              },
+              newTail) || (_U.cmp($Basics.fst(newHead),
+              $Basics.toFloat(_v4._0) / 2) > 0 || (_U.cmp($Basics.snd(newHead),
+              $Basics.toFloat(_v4._1) / 2) > 0 || (_U.cmp($Basics.fst(newHead),
+              $Basics.toFloat(0 - _v4._0) / 2) < 0 || _U.cmp($Basics.snd(newHead),
+              $Basics.toFloat(0 - _v4._1) / 2) < 0)));}
+         _U.badCase($moduleName,
+         "between lines 152 and 156");
+      }();
+   });
+   var txt = function (msg) {
+      return $Graphics$Collage.toForm($Graphics$Element.leftAligned($Text.monospace($Text.color($Color.white)($Text.fromString(msg)))));
+   };
+   var delta = $Time.fps(10);
+   var Started = F3(function (a,
+   b,
+   c) {
+      return {ctor: "Started"
+             ,_0: a
+             ,_1: b
+             ,_2: c};
+   });
+   var NotStarted = {ctor: "NotStarted"};
+   var defaultGame = NotStarted;
+   var Snake = F2(function (a,b) {
+      return {_: {}
+             ,direction: b
+             ,segments: a};
+   });
+   var Right = {ctor: "Right"};
+   var Left = {ctor: "Left"};
+   var Down = {ctor: "Down"};
+   var Up = {ctor: "Up"};
+   var getNewDirection = F2(function (userInput,
+   currentDir) {
+      return function () {
+         var $ = function () {
+            switch (userInput.ctor)
+            {case "Arrow":
+               return {ctor: "_Tuple2"
+                      ,_0: userInput._0.x
+                      ,_1: userInput._0.y};}
+            return {ctor: "_Tuple2"
+                   ,_0: 0
+                   ,_1: 0};
+         }(),
+         x = $._0,
+         y = $._1;
+         return _U.eq(x,0) && _U.eq(y,
+         0) ? currentDir : _U.eq(x,
+         -1) && _U.eq(currentDir,
+         Right) ? currentDir : _U.eq(x,
+         1) && _U.eq(currentDir,
+         Left) ? currentDir : _U.eq(y,
+         -1) && _U.eq(currentDir,
+         Up) ? currentDir : _U.eq(y,
+         1) && _U.eq(currentDir,
+         Down) ? currentDir : _U.eq(x,
+         -1) ? Left : _U.eq(x,
+         1) ? Right : _U.eq(y,
+         -1) ? Down : _U.eq(y,
+         1) ? Up : _U.badIf($moduleName,
+         "between lines 129 and 137");
+      }();
+   });
+   var Input = F2(function (a,b) {
+      return {_: {}
+             ,userInput: b
+             ,windowDim: a};
+   });
+   var Space = {ctor: "Space"};
+   var Arrow = function (a) {
+      return {ctor: "Arrow",_0: a};
+   };
+   var defaultUserInput = Arrow({_: {}
+                                ,x: 0
+                                ,y: 0});
+   var spaces = A2($Signal._op["<~"],
+   function (p) {
+      return p ? Space : defaultUserInput;
+   },
+   $Keyboard.space);
+   var arrows = A2($Signal._op["<~"],
+   Arrow,
+   $Keyboard.arrows);
+   var userInput = A2($Signal.merge,
+   arrows,
+   spaces);
+   var input = A2($Signal.sampleOn,
+   delta,
+   A2($Signal._op["~"],
+   A2($Signal._op["<~"],
+   Input,
+   $Window.dimensions),
+   userInput));
+   var initSeed = $Random.initialSeed(42);
+   var cherryRadius = 7.5;
+   var isOverlap = F2(function (_v10,
+   _v11) {
+      return function () {
+         switch (_v11.ctor)
+         {case "_Tuple2":
+            return function () {
+                 switch (_v10.ctor)
+                 {case "_Tuple2":
+                    return function () {
+                         var $ = {ctor: "_Tuple2"
+                                 ,_0: _v11._0 - _v10._0
+                                 ,_1: _v11._1 - _v10._1},
+                         xd = $._0,
+                         yd = $._1;
+                         var distance = $Basics.sqrt(xd * xd + yd * yd);
+                         return _U.cmp(distance,
+                         cherryRadius * 2) < 1;
+                      }();}
+                 _U.badCase($moduleName,
+                 "between lines 147 and 149");
+              }();}
+         _U.badCase($moduleName,
+         "between lines 147 and 149");
+      }();
+   });
+   var segmentDim = 15.0;
+   var defaultSnake = {_: {}
+                      ,direction: Right
+                      ,segments: $List.reverse($List.map(function (n) {
+                         return {ctor: "_Tuple2"
+                                ,_0: n * segmentDim
+                                ,_1: 0};
+                      })(_L.range(0.0,8.0)))};
+   var display = F2(function (_v18,
+   gameState) {
+      return function () {
+         switch (_v18.ctor)
+         {case "_Tuple2":
+            return function () {
+                 var content = function () {
+                    var _v22 = A2($Debug.watch,
+                    "gamestate",
+                    gameState);
+                    switch (_v22.ctor)
+                    {case "NotStarted":
+                       return _L.fromArray([txt("press SPACE to start")]);
+                       case "Started":
+                       return function () {
+                            var segments = $List.map(function (pos) {
+                               return $Graphics$Collage.move(pos)($Graphics$Collage.filled($Color.yellow)(A2($Graphics$Collage.rect,
+                               segmentDim,
+                               segmentDim)));
+                            })(_v22._0.segments);
+                            return function () {
+                               switch (_v22._1.ctor)
+                               {case "Just":
+                                  return A2($List._op["::"],
+                                    $Graphics$Collage.move(_v22._1._0)($Graphics$Collage.filled($Color.white)($Graphics$Collage.circle(cherryRadius))),
+                                    segments);
+                                  case "Nothing":
+                                  return segments;}
+                               _U.badCase($moduleName,
+                               "between lines 93 and 99");
+                            }();
+                         }();}
+                    _U.badCase($moduleName,
+                    "between lines 84 and 99");
+                 }();
+                 var bg = $Graphics$Collage.filled($Color.black)(A2($Graphics$Collage.rect,
+                 $Basics.toFloat(_v18._0),
+                 $Basics.toFloat(_v18._1)));
+                 return A3($Graphics$Collage.collage,
+                 _v18._0,
+                 _v18._1,
+                 A2($List._op["::"],bg,content));
+              }();}
+         _U.badCase($moduleName,
+         "between lines 82 and 99");
+      }();
+   });
+   var getNewSegment = F2(function (_v28,
+   direction) {
+      return function () {
+         switch (_v28.ctor)
+         {case "_Tuple2":
+            return function () {
+                 switch (direction.ctor)
+                 {case "Down":
+                    return {ctor: "_Tuple2"
+                           ,_0: _v28._0
+                           ,_1: _v28._1 - segmentDim};
+                    case "Left":
+                    return {ctor: "_Tuple2"
+                           ,_0: _v28._0 - segmentDim
+                           ,_1: _v28._1};
+                    case "Right":
+                    return {ctor: "_Tuple2"
+                           ,_0: _v28._0 + segmentDim
+                           ,_1: _v28._1};
+                    case "Up":
+                    return {ctor: "_Tuple2"
+                           ,_0: _v28._0
+                           ,_1: _v28._1 + segmentDim};}
+                 _U.badCase($moduleName,
+                 "between lines 140 and 144");
+              }();}
+         _U.badCase($moduleName,
+         "between lines 140 and 144");
+      }();
+   });
+   var stepGame = F2(function (_v33,
+   gameState) {
+      return function () {
+         return function () {
+            switch (gameState.ctor)
+            {case "NotStarted":
+               return _U.eq(_v33.userInput,
+                 Space) ? A3(Started,
+                 defaultSnake,
+                 $Maybe.Nothing,
+                 initSeed) : gameState;
+               case "Started":
+               return function () {
+                    var _ = A2(genRandoms,
+                    3,
+                    gameState._2);
+                    var newSeed = function () {
+                       switch (_.ctor)
+                       {case "_Tuple2":
+                          switch (_._0.ctor)
+                            {case "::":
+                               switch (_._0._1.ctor)
+                                 {case "::":
+                                    switch (_._0._1._1.ctor)
+                                      {case "::":
+                                         switch (_._0._1._1._1.ctor)
+                                           {case "[]": return _._1;}
+                                           break;}
+                                      break;}
+                                 break;}
+                            break;}
+                       _U.badCase($moduleName,
+                       "on line 61, column 46 to 63");
+                    }();
+                    var randX = function () {
+                       switch (_.ctor)
+                       {case "_Tuple2":
+                          switch (_._0.ctor)
+                            {case "::":
+                               switch (_._0._1.ctor)
+                                 {case "::":
+                                    switch (_._0._1._1.ctor)
+                                      {case "::":
+                                         switch (_._0._1._1._1.ctor)
+                                           {case "[]": return _._0._1._0;}
+                                           break;}
+                                      break;}
+                                 break;}
+                            break;}
+                       _U.badCase($moduleName,
+                       "on line 61, column 46 to 63");
+                    }();
+                    var randY = function () {
+                       switch (_.ctor)
+                       {case "_Tuple2":
+                          switch (_._0.ctor)
+                            {case "::":
+                               switch (_._0._1.ctor)
+                                 {case "::":
+                                    switch (_._0._1._1.ctor)
+                                      {case "::":
+                                         switch (_._0._1._1._1.ctor)
+                                           {case "[]":
+                                              return _._0._1._1._0;}
+                                           break;}
+                                      break;}
+                                 break;}
+                            break;}
+                       _U.badCase($moduleName,
+                       "on line 61, column 46 to 63");
+                    }();
+                    var spawn = function () {
+                       switch (_.ctor)
+                       {case "_Tuple2":
+                          switch (_._0.ctor)
+                            {case "::":
+                               switch (_._0._1.ctor)
+                                 {case "::":
+                                    switch (_._0._1._1.ctor)
+                                      {case "::":
+                                         switch (_._0._1._1._1.ctor)
+                                           {case "[]": return _._0._0;}
+                                           break;}
+                                      break;}
+                                 break;}
+                            break;}
+                       _U.badCase($moduleName,
+                       "on line 61, column 46 to 63");
+                    }();
+                    var _raw = gameState._0.segments,
+                    $ = _raw.ctor === "::" ? _raw : _U.badCase($moduleName,
+                    "on line 59, column 26 to 34"),
+                    head = $._0,
+                    tail = $._1;
+                    var newDir = A2(getNewDirection,
+                    _v33.userInput,
+                    gameState._0.direction);
+                    var newHead = A2(getNewSegment,
+                    head,
+                    newDir);
+                    var ateCherry = function () {
+                       switch (gameState._1.ctor)
+                       {case "Just":
+                          return A2(isOverlap,
+                            newHead,
+                            gameState._1._0);
+                          case "Nothing": return false;}
+                       _U.badCase($moduleName,
+                       "between lines 63 and 66");
+                    }();
+                    var newCherry = ateCherry ? $Maybe.Nothing : _U.eq(gameState._1,
+                    $Maybe.Nothing) && _U.cmp(spawn,
+                    0.1) < 1 ? A3(spawnCherry,
+                    _v33.windowDim,
+                    randX,
+                    randY) : gameState._1;
+                    var newTail = ateCherry ? gameState._0.segments : A2($List.take,
+                    $List.length(gameState._0.segments) - 1,
+                    gameState._0.segments);
+                    var gameOver = A3(isGameOver,
+                    _v33.windowDim,
+                    newHead,
+                    newTail);
+                    var newSnake = {_: {}
+                                   ,direction: newDir
+                                   ,segments: A2($List._op["::"],
+                                   newHead,
+                                   newTail)};
+                    return gameOver ? NotStarted : A3(Started,
+                    newSnake,
+                    newCherry,
+                    newSeed);
+                 }();}
+            _U.badCase($moduleName,
+            "between lines 53 and 78");
+         }();
+      }();
+   });
+   var gameState = A3($Signal.foldp,
+   stepGame,
+   defaultGame,
+   input);
+   var main = A2($Signal._op["~"],
+   A2($Signal._op["<~"],
+   display,
+   $Window.dimensions),
+   gameState);
+   _elm.Main.values = {_op: _op
+                      ,segmentDim: segmentDim
+                      ,cherryRadius: cherryRadius
+                      ,initSeed: initSeed
+                      ,Arrow: Arrow
+                      ,Space: Space
+                      ,defaultUserInput: defaultUserInput
+                      ,arrows: arrows
+                      ,spaces: spaces
+                      ,userInput: userInput
+                      ,Input: Input
+                      ,Up: Up
+                      ,Down: Down
+                      ,Left: Left
+                      ,Right: Right
+                      ,Snake: Snake
+                      ,defaultSnake: defaultSnake
+                      ,NotStarted: NotStarted
+                      ,Started: Started
+                      ,defaultGame: defaultGame
+                      ,stepGame: stepGame
+                      ,display: display
+                      ,delta: delta
+                      ,input: input
+                      ,gameState: gameState
+                      ,main: main
+                      ,txt: txt
+                      ,getNewDirection: getNewDirection
+                      ,getNewSegment: getNewSegment
+                      ,isOverlap: isOverlap
+                      ,isGameOver: isGameOver
+                      ,genRandoms: genRandoms
+                      ,spawnCherry: spawnCherry};
+   return _elm.Main.values;
+};

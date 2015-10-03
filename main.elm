@@ -161,4 +161,3 @@ spawnCherry (w, h) randW randH =
     let x = randW * toFloat w - toFloat w/2
         y = randH * toFloat h - toFloat h/2
     in Just (x, y)
---}
