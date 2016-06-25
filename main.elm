@@ -16,9 +16,6 @@ segmentDim = 15.0
 cherryRadius = 7.5
 (width, height) = (600, 600)
 
-initSeed : Random.Seed
-initSeed = Random.initialSeed 42
-
 main =
   Html.program
     { init = init
