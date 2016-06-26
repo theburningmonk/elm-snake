@@ -1,18 +1,16 @@
-import Element exposing (..)
-import Collage exposing (..)
-import Color exposing (..)
 import Html exposing (..)
 import Html.App as Html
 import Html.Events exposing (..)
-import Char exposing (..)
-import Random
-import List
-import Keyboard exposing (..)
-import Text 
+import Keyboard
 import Time exposing (..)
-import Debug
+import Element exposing (..)
+import Collage exposing (..)
+import Color exposing (..)
+import Text
+import Char
+import Random exposing (..)
 
-segmentDim = 15.0
+segmentDim = 15
 cherryRadius = 7.5
 (width, height) = (600, 600)
 
@@ -24,11 +22,11 @@ main =
     , subscriptions = subscriptions
     }
 
--- Model
+-- step 1: define your Model
 type Direction 
-  = Up 
-  | Down 
-  | Left 
+  = Up
+  | Down
+  | Left
   | Right
 
 type alias Position = (Float, Float)
@@ -37,146 +35,140 @@ pos : Float -> Float -> Position
 pos = (,)
 
 type alias Snake = 
-  { segments : List Position
-  , direction : Direction }
+  { head: Position
+  , tail: List Position
+  , direction: Direction }
 
 type alias Cherry = Maybe Position
-type alias Score  = Int
 
-type Model
+type alias Score = Int
+
+type Model 
   = NotStarted
   | Started Snake Cherry Score
 
+-- step 2: define Msg that can trigger updates to Model
+type Msg 
+  = Tick Time
+  | KeyPress Keyboard.KeyCode
+  | Spawn (Float, Position)
+
+randPos = Random.pair (Random.float 0 1) (Random.float 0 1)
+
+generator: Random.Generator (Float, Position)
+generator = Random.pair (Random.float 0 1) randPos
+
+-- step 3: define the initial state for the app
 initSnake : Snake
 initSnake = 
-  { segments =
-      [0.0..8.0]
-      |> List.map (\n -> pos (n * segmentDim) 0)
-      |> List.reverse
-  , direction = Right }
+  let head = (0, 0)
+      tail = [1..8] |> List.map (\n -> pos (-n*segmentDim) 0)
+  in { head=head, tail=tail, direction=Right }
 
 init : (Model, Cmd Msg)
 init = (NotStarted, Cmd.none)
 
--- Msg
-type Msg
-  = Tick Time
-  | KeyPress Keyboard.KeyCode
-  | Spawn (Float, (Float, Float))
+-- step 4: define your subscriptions - WebSocket, Keyboard, etc.
+subscriptions : Model -> Sub Msg
+subscriptions model = 
+  case model of
+    NotStarted ->
+      Keyboard.presses KeyPress
 
-randFloat : Random.Generator Float
-randFloat = Random.float 0 1
+    Started _ _ _ ->
+      Sub.batch
+        [ Keyboard.presses KeyPress
+        , Time.every (Time.inMilliseconds 50) Tick
+        ]
 
-randGenerator : Random.Generator (Float, (Float, Float))
-randGenerator = Random.pair randFloat (Random.pair randFloat randFloat)
+-- step 5: how to render your model
+view : Model -> Html Msg
+view model = 
+  let bg = rect (toFloat width) (toFloat height) |> filled black
+      content =
+        case model of
+          NotStarted -> 
+            [txt "press SPACE to start"]
 
--- Update
+          Started snake cherry score ->
+            let head = rect segmentDim segmentDim |> filled white |> move snake.head 
+                tail =
+                  snake.tail
+                  |> List.map (\pos -> 
+                    rect segmentDim segmentDim |> filled yellow |> move pos)
+                scoreLbl = txt (toString score)
+            in case cherry of
+                Nothing -> scoreLbl::head::tail
+                Just pos ->
+                  (circle cherryRadius |> filled red |> move pos)::scoreLbl::head::tail
+  in collage width height (bg::content)
+     |> Element.toHtml
+
+-- step 6: implement state transition
 update : Msg -> Model -> (Model, Cmd Msg)
-update msg model = 
+update msg model =
   case model of
     NotStarted ->
       case msg of
-        KeyPress 32 -> (Started initSnake Nothing 0, Cmd.none)
-        _  -> (model, Cmd.none)
+        KeyPress 32 -> 
+          (Started initSnake Nothing 0, Cmd.none)
+        
+        _ -> 
+          (model, Cmd.none)
+
     Started snake cherry score ->
       case msg of
-        KeyPress keyCode -> 
+        KeyPress keyCode ->
           let newDir = getNewDirection keyCode snake.direction
-              newSnake = { snake | direction = newDir }
+              newSnake = { snake | direction=newDir }
           in (Started newSnake cherry score, Cmd.none)
-
-        Tick _ ->
-          case snake.segments of
-            head::tail ->
-              let newHead = getNewSegment head snake.direction
-                  ateCherry =
-                    case cherry of
-                      Nothing -> False
-                      Just pos -> isOverlap newHead pos
-                  newTail = 
-                    if ateCherry then
-                      snake.segments
-                    else 
-                      List.take (List.length snake.segments-1) snake.segments
-                  newSnake = { snake | segments = newHead::newTail }
-                  newCherry =
-                    if ateCherry then
-                      Nothing
-                    else 
-                      cherry
-                  newScore =
-                    if ateCherry then
-                      score + 1
-                    else 
-                      score
-                  gameOver = isGameOver newHead newTail
-              in if gameOver then 
-                    (NotStarted, Cmd.none)
-                 else if (newCherry == Nothing) then
-                    (Started newSnake newCherry newScore, Random.generate Spawn randGenerator)
-                 else
-                    (Started newSnake newCherry newScore, Cmd.none)
-            _ -> Debug.crash "found a headless snake!"
 
         Spawn (chance, (randX, randY)) ->
           if chance <= 0.1 then
             let newCherry = spawnCherry randX randY
             in (Started snake newCherry score, Cmd.none)
-          else 
-            (Started snake cherry score, Cmd.none)
+          else
+            (model, Cmd.none)
 
--- View
-view : Model -> Html Msg
-view model =
-  let bg = rect (toFloat width) (toFloat height) |> filled black
-      content =
-        case model of
-          NotStarted -> 
-            [txt "press SPACE to start\n use [a, w, s, d] to control snake"]
-          Started snake cherry score ->
-            let segments =
-              snake.segments
-              |> List.map (\pos ->
-                rect segmentDim segmentDim
-                |> filled yellow
-                |> move pos)
-                scoreLabel = txt (toString score)
-
-            in case cherry of
-                Nothing -> scoreLabel::segments
-                Just pos ->
-                  (circle cherryRadius
-                   |> filled white
-                   |> move pos)::scoreLabel::segments
-  in collage width height (bg::content)
-     |> Element.toHtml
-
--- Subscriptions
-subscriptions : Model -> Sub Msg
-subscriptions model =
-  case model of
-    NotStarted ->
-      Keyboard.presses KeyPress
-    Started _ _ _ ->
-      Sub.batch [
-        Keyboard.presses KeyPress
-      , Time.every (Time.inMilliseconds 50) Tick
-      ]
+        Tick _ ->
+          let newHead = getNewSegment snake.head snake.direction
+              ateCherry =
+                case cherry of
+                  Just pos -> isOverlap newHead pos
+                  Nothing -> False
+              newTail = 
+                if ateCherry then
+                  snake.head::snake.tail
+                else
+                  snake.head::(List.take (List.length snake.tail-1) snake.tail)
+              newSnake = { snake | head=newHead, tail=newTail }
+              (newCherry, newScore) =
+                if ateCherry then
+                  (Nothing, score+1)
+                else 
+                  (cherry, score)
+              gameOver = isGameOver newHead newTail
+          in if gameOver then
+              (NotStarted, Cmd.none)
+             else if newCherry == Nothing then
+              (Started newSnake newCherry newScore, Random.generate Spawn generator)
+             else 
+              (Started newSnake newCherry newScore, Cmd.none)
 
 txt : String -> Form
-txt msg = 
-  msg 
-  |> Text.fromString 
-  |> Text.color white 
-  |> Text.monospace 
-  |> Element.centered 
+txt msg =
+  msg
+  |> Text.fromString
+  |> Text.color white
+  |> Text.monospace
+  |> Element.centered
   |> Collage.toForm
 
 getNewDirection : Char.KeyCode -> Direction -> Direction
 getNewDirection keyCode currentDir =
   let (changeableDirs, newDir) =
-    case fromCode keyCode of
-      'a' -> ([ Up, Down ], Left) 
+    case Char.fromCode keyCode of
+      'a' -> ([ Up, Down ], Left)
       'w' -> ([ Left, Right ], Up)
       'd' -> ([ Up, Down ], Right)
       's' -> ([ Left, Right ], Down)
@@ -199,7 +191,7 @@ isGameOver newHead newTail =
   || fst newHead < (-width / 2)     -- hit left
   || snd newHead < (-height / 2)    -- hit right
 
-spawnCherry : Float -> Float -> Maybe Position
+spawnCherry : Float -> Float -> Cherry
 spawnCherry randW randH =
   let x = randW * width - width / 2
       y = randH * height - height / 2
