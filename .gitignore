@@ -3,3 +3,4 @@ build
 Public
 elm_dependencies
 elm-stuff
+.DS_Store
