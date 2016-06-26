@@ -36,10 +36,11 @@ type alias Snake =
   , direction : Direction }
 
 type alias Cherry = Maybe (Float, Float)
+type alias Score  = Int
 
 type Model
   = NotStarted
-  | Started Snake Cherry
+  | Started Snake Cherry Score
 
 initSnake : Snake
 initSnake = 
@@ -70,14 +71,14 @@ update msg model =
   case model of
     NotStarted ->
       case msg of
-        KeyPress 32 -> (Started initSnake Nothing, Cmd.none)
+        KeyPress 32 -> (Started initSnake Nothing 0, Cmd.none)
         _  -> (model, Cmd.none)
-    Started snake cherry ->
+    Started snake cherry score ->
       case msg of
         KeyPress keyCode -> 
           let newDir = getNewDirection keyCode snake.direction
               newSnake = { snake | direction = newDir }
-          in (Started newSnake cherry, Cmd.none)
+          in (Started newSnake cherry score, Cmd.none)
 
         Tick _ ->
           case snake.segments of
@@ -98,21 +99,26 @@ update msg model =
                       Nothing
                     else 
                       cherry
+                  newScore =
+                    if ateCherry then
+                      score + 1
+                    else 
+                      score
                   gameOver = isGameOver newHead newTail
               in if gameOver then 
                     (NotStarted, Cmd.none)
                  else if (newCherry == Nothing) then
-                    (Started newSnake newCherry, Random.generate Spawn randGenerator)
+                    (Started newSnake newCherry newScore, Random.generate Spawn randGenerator)
                  else
-                    (Started newSnake newCherry, Cmd.none)
+                    (Started newSnake newCherry newScore, Cmd.none)
             _ -> Debug.crash "found a headless snake!"
 
         Spawn (chance, (randX, randY)) ->
           if chance <= 0.1 then
             let newCherry = spawnCherry randX randY
-            in (Started snake newCherry, Cmd.none)
+            in (Started snake newCherry score, Cmd.none)
           else 
-            (Started snake cherry, Cmd.none)
+            (Started snake cherry score, Cmd.none)
 
 -- View
 view : Model -> Html Msg
@@ -122,19 +128,21 @@ view model =
         case model of
           NotStarted -> 
             [txt "press SPACE to start\n use [a, w, s, d] to control snake"]
-          Started snake cherry ->
+          Started snake cherry score ->
             let segments =
               snake.segments
               |> List.map (\pos ->
                 rect segmentDim segmentDim
                 |> filled yellow
                 |> move pos)
+                scoreLabel = txt (toString score)
+
             in case cherry of
-                Nothing -> segments
+                Nothing -> scoreLabel::segments
                 Just pos ->
                   (circle cherryRadius
                    |> filled white
-                   |> move pos)::segments
+                   |> move pos)::scoreLabel::segments
   in collage width height (bg::content)
      |> Element.toHtml
 
@@ -144,7 +152,7 @@ subscriptions model =
   case model of
     NotStarted ->
       Keyboard.presses KeyPress
-    Started _ _ ->
+    Started _ _ _ ->
       Sub.batch [
         Keyboard.presses KeyPress
       , Time.every (Time.inMilliseconds 50) Tick
