@@ -31,11 +31,16 @@ type Direction
   | Left 
   | Right
 
+type alias Position = (Float, Float)
+
+pos : Float -> Float -> Position
+pos = (,)
+
 type alias Snake = 
-  { segments : List(Float, Float)
+  { segments : List Position
   , direction : Direction }
 
-type alias Cherry = Maybe (Float, Float)
+type alias Cherry = Maybe Position
 type alias Score  = Int
 
 type Model
@@ -46,7 +51,7 @@ initSnake : Snake
 initSnake = 
   { segments =
       [0.0..8.0]
-      |> List.map (\n -> (n * segmentDim, 0))
+      |> List.map (\n -> pos (n * segmentDim) 0)
       |> List.reverse
   , direction = Right }
 
@@ -178,15 +183,15 @@ getNewDirection keyCode currentDir =
       _  -> ([], currentDir)
   in if List.any ((==) currentDir) changeableDirs then newDir else currentDir
 
-getNewSegment : (Float, Float) -> Direction -> (Float, Float)
+getNewSegment : Position -> Direction -> Position
 getNewSegment (x, y) direction =
   case direction of
-    Up    -> (x, y+segmentDim)
-    Down  -> (x, y-segmentDim)
-    Left  -> (x-segmentDim, y)
-    Right -> (x+segmentDim, y)
+    Up    -> pos x (y+segmentDim)
+    Down  -> pos x (y-segmentDim)
+    Left  -> pos (x-segmentDim) y
+    Right -> pos (x+segmentDim) y
 
-isGameOver : (Float, Float) -> List (Float, Float) -> Bool
+isGameOver : Position -> List Position -> Bool
 isGameOver newHead newTail =
   List.any ((==) newHead) newTail   -- eat itself
   || fst newHead > (width / 2)      -- hit bottom
@@ -194,13 +199,13 @@ isGameOver newHead newTail =
   || fst newHead < (-width / 2)     -- hit left
   || snd newHead < (-height / 2)    -- hit right
 
-spawnCherry : Float -> Float -> Maybe (Float, Float)
+spawnCherry : Float -> Float -> Maybe Position
 spawnCherry randW randH =
   let x = randW * width - width / 2
       y = randH * height - height / 2
-  in Just (x, y)
+  in pos x y |> Just
 
-isOverlap : (Float, Float) -> (Float, Float) -> Bool
+isOverlap : Position -> Position -> Bool
 isOverlap (snakeX, snakeY) (cherryX, cherryY) =
   let (xd, yd) = (cherryX - snakeX, cherryY - snakeY)
       distance = sqrt(xd * xd + yd * yd)
