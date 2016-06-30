@@ -1,3 +1,5 @@
+port module Main exposing (..)
+
 import Html exposing (..)
 import Html.App as Html
 import Html.Events exposing (..)
@@ -69,6 +71,8 @@ init : (Model, Cmd Msg)
 init = (NotStarted, Cmd.none)
 
 -- step 4: define your subscriptions - WebSocket, Keyboard, etc.
+port playSound : () -> Cmd msg
+
 subscriptions : Model -> Sub Msg
 subscriptions model = 
   case model of
@@ -148,12 +152,13 @@ update msg model =
                 else 
                   (cherry, score)
               gameOver = isGameOver newHead newTail
+              cmd = if ateCherry then playSound () else Cmd.none
           in if gameOver then
               (NotStarted, Cmd.none)
              else if newCherry == Nothing then
-              (Started newSnake newCherry newScore, Random.generate Spawn generator)
+              (Started newSnake newCherry newScore, Cmd.batch [cmd, Random.generate Spawn generator])
              else 
-              (Started newSnake newCherry newScore, Cmd.none)
+              (Started newSnake newCherry newScore, cmd)
 
 txt : String -> Form
 txt msg =

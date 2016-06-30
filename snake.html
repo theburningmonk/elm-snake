@@ -1,0 +1,18 @@
+<div id="snake"></div>
+<audio id="eat" src="eat.mp3" preload="auto"></audio>
+
+<script src="snake.js"></script>
+<script>
+  function playSound(id) {
+		if (id.length) {
+			document.getElementById(id).play();
+		}
+	}
+
+  var node = document.getElementById('snake');
+  var app = Elm.Main.embed(node);
+
+  app.ports.playSound.subscribe(function () {
+    playSound("eat");
+  });
+</script>
