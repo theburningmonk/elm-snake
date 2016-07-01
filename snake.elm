@@ -8,6 +8,8 @@ import Element exposing (..)
 import Color exposing (..)
 import Text exposing (..)
 
+cherryRadius = 7.5
+segmentDim = 15
 (width, height) = (500, 500)
 
 main =
@@ -34,9 +36,9 @@ type alias Snake =
 
 initSnake : Snake
 initSnake = 
-  { head : (0, 0)
-  , tail : [1..8] |> List
-
+  { head = (0, 0)
+  , tail = [1..8] |> List.map (\n -> (-segmentDim, 0))
+  , direction = Right
   }
 
 type Model 
@@ -91,6 +93,9 @@ update msg model =
 
         _ -> (model, Cmd.none)
 
+    Started snake ->
+      case msg of
+        
 
 
 txt : String -> Form
