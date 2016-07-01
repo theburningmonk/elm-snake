@@ -117,7 +117,11 @@ update msg model =
               oldBody = (snake.head::snake.tail)
               newTail = List.take (List.length oldBody-1) oldBody
               newSnake = { snake | head=newHead, tail=newTail }
-          in (Started newSnake, Cmd.none)
+              gameOver = isGameOver newHead newTail
+          in if gameOver then
+              (NotStarted, Cmd.none)
+             else 
+              (Started newSnake, Cmd.none)
 
 txt : String -> Form
 txt msg =
@@ -146,3 +150,11 @@ getNewSegment (x, y) direction =
     Down  -> pos x (y-segmentDim)
     Left  -> pos (x-segmentDim) y
     Right -> pos (x+segmentDim) y
+
+isGameOver : Position -> List Position -> Bool
+isGameOver newHead newTail =
+  List.any ((==) newHead) newTail   -- eat itself
+  || fst newHead > (width / 2)      -- hit bottom
+  || snd newHead > (height / 2)     -- hit top
+  || fst newHead < (-width / 2)     -- hit left
+  || snd newHead < (-height / 2)    -- hit right
