@@ -8,8 +8,8 @@ import Element exposing (..)
 import Color exposing (..)
 import Text exposing (..)
 
-cherryRadius = 7.5
 segmentDim = 15
+cherryRadius = 7.5
 (width, height) = (500, 500)
 
 main =
@@ -32,13 +32,6 @@ type alias Snake =
   { head: Position
   , tail: List Position
   , direction: Direction 
-  }
-
-initSnake : Snake
-initSnake = 
-  { head = (0, 0)
-  , tail = [1..8] |> List.map (\n -> (-segmentDim, 0))
-  , direction = Right
   }
 
 type Model 
@@ -72,31 +65,26 @@ view : Model -> Html Msg
 view model =
   let bg = rect (toFloat width) (toFloat height) |> filled black
       content =
-        case model of
+        case model of 
           NotStarted -> 
-            [ txt "press SPACE to start" ]
-          
-          Started _ ->
-            []
+            [txt "press SPACE to start"]
+
+          Started snake ->
+            let head = rect segmentDim segmentDim |> filled white |> move snake.head 
+                tail = 
+                  snake.tail
+                  |> List.map (\p -> 
+                    rect segmentDim segmentDim
+                    |> filled Color.yellow
+                    |> move p)
+             in head::tail
+
   in collage width height (bg::content)
      |> Element.toHtml
 
-
 -- step 6: implement state transition
 update : Msg -> Model -> (Model, Cmd Msg)
-update msg model =
-  case model of
-    NotStarted ->
-      case msg of
-        KeyPress 32 -> 
-          (Started initSnake, Cmd.none)
-
-        _ -> (model, Cmd.none)
-
-    Started snake ->
-      case msg of
-        
-
+update msg model = (NotStarted, Cmd.none)
 
 txt : String -> Form
 txt msg =
