@@ -45,9 +45,11 @@ initSnake =
   , direction = Right
   }
 
+type alias Cherry = Maybe Position
+
 type Model 
   = NotStarted
-  | Started Snake
+  | Started Snake Cherry
 
 -- step 2: define Msg that can trigger updates to Model
 type Msg 
@@ -65,7 +67,7 @@ subscriptions model =
     NotStarted ->
       Keyboard.presses KeyPress
 
-    Started _ ->
+    Started _ _ ->
       Sub.batch [
         Keyboard.presses KeyPress
       , Time.every (Time.inMilliseconds 50) Tick
@@ -80,7 +82,7 @@ view model =
           NotStarted -> 
             [txt "press SPACE to start"]
 
-          Started snake ->
+          Started snake cherry ->
             let head = rect segmentDim segmentDim |> filled white |> move snake.head 
                 tail = 
                   snake.tail
@@ -88,7 +90,10 @@ view model =
                     rect segmentDim segmentDim
                     |> filled Color.yellow
                     |> move p)
-             in head::tail
+             in case cherry of
+                  Nothing -> head::tail
+                  Just pos ->
+                    (circle cherryRadius |> filled white |> move pos)::head::tail
 
   in collage width height (bg::content)
      |> Element.toHtml
@@ -100,17 +105,17 @@ update msg model =
     NotStarted ->
       case msg of
         KeyPress 32 ->
-          (Started initSnake, Cmd.none)
+          (Started initSnake Nothing, Cmd.none)
 
         _ ->
           (model, Cmd.none)
 
-    Started snake -> 
+    Started snake cherry -> 
       case msg of
         KeyPress keyCode ->
           let newDir = getNewDirection keyCode snake.direction
               newSnake = { snake | direction = newDir }
-          in (Started newSnake, Cmd.none)
+          in (Started newSnake cherry, Cmd.none)
 
         Tick _ -> 
           let newHead = getNewSegment snake.head snake.direction
@@ -121,7 +126,7 @@ update msg model =
           in if gameOver then
               (NotStarted, Cmd.none)
              else 
-              (Started newSnake, Cmd.none)
+              (Started newSnake cherry, Cmd.none)
 
 txt : String -> Form
 txt msg =
