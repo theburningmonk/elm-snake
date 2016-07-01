@@ -22,6 +22,7 @@ main =
 
 -- step 1: define your Model
 type alias Position = (Float, Float)
+
 type Direction 
   = Up
   | Down
@@ -32,6 +33,13 @@ type alias Snake =
   { head: Position
   , tail: List Position
   , direction: Direction 
+  }
+
+initSnake : Snake 
+initSnake =
+  { head = (0, 0)
+  , tail = [1..8] |> List.map (\n -> (-n * segmentDim, 0))
+  , direction = Right
   }
 
 type Model 
@@ -84,7 +92,18 @@ view model =
 
 -- step 6: implement state transition
 update : Msg -> Model -> (Model, Cmd Msg)
-update msg model = (NotStarted, Cmd.none)
+update msg model =
+  case model of
+    NotStarted ->
+      case msg of
+        KeyPress 32 ->
+          (Started initSnake, Cmd.none)
+
+        _ ->
+          (model, Cmd.none)
+
+    Started snake -> 
+      (model, Cmd.none)
 
 txt : String -> Form
 txt msg =
