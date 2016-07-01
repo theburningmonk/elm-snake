@@ -134,15 +134,24 @@ update msg model =
         Tick _ -> 
           let newHead = getNewSegment snake.head snake.direction
               oldBody = (snake.head::snake.tail)
+              ateCherry =
+                case cherry of
+                  Nothing -> False
+                  Just pos -> isOverlap newHead pos
+              newCherry =
+                if ateCherry then
+                  Nothing
+                else 
+                  cherry
               newTail = List.take (List.length oldBody-1) oldBody
               newSnake = { snake | head=newHead, tail=newTail }
               gameOver = isGameOver newHead newTail
           in if gameOver then
               (NotStarted, Cmd.none)
-             else if cherry == Nothing then
-              (Started newSnake cherry, Random.generate Spawn randGen)
+             else if newCherry == Nothing then
+              (Started newSnake newCherry, Random.generate Spawn randGen)
              else 
-              (Started newSnake cherry, Cmd.none)
+              (Started newSnake newCherry, Cmd.none)
 
 txt : String -> Form
 txt msg =
@@ -185,3 +194,9 @@ spawnCherry randW randH =
   let x = randW * width - width / 2
       y = randH * height - height / 2
   in pos x y |> Just
+
+isOverlap : Position -> Position -> Bool
+isOverlap (snakeX, snakeY) (cherryX, cherryY) =
+  let (xd, yd) = (cherryX - snakeX, cherryY - snakeY)
+      distance = sqrt(xd * xd + yd * yd)
+  in distance <= (cherryRadius * 2)
