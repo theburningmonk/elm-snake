@@ -8,6 +8,7 @@ import Element exposing (..)
 import Color exposing (..)
 import Text exposing (..)
 import Char exposing (..)
+import Random exposing (..)
 
 segmentDim = 15
 cherryRadius = 7.5
@@ -51,10 +52,17 @@ type Model
   = NotStarted
   | Started Snake Cherry
 
+randPos : Random.Generator Position
+randPos = Random.pair (Random.float 0 1) (Random.float 0 1)
+
+randGen : Random.Generator (Float, Position)
+randGen = Random.pair (Random.float 0 1) randPos
+
 -- step 2: define Msg that can trigger updates to Model
 type Msg 
   = KeyPress Keyboard.KeyCode
   | Tick Time
+  | Spawn (Float, Position)
 
 -- step 3: define the initial state for the app
 init : (Model, Cmd Msg)
@@ -117,6 +125,12 @@ update msg model =
               newSnake = { snake | direction = newDir }
           in (Started newSnake cherry, Cmd.none)
 
+        Spawn (spawn, (randX, randY)) ->
+          if spawn <= 0.1 then
+            let newCherry = spawnCherry randX randY
+            in (Started snake newCherry, Cmd.none)
+          else (model, Cmd.none)
+
         Tick _ -> 
           let newHead = getNewSegment snake.head snake.direction
               oldBody = (snake.head::snake.tail)
@@ -125,6 +139,8 @@ update msg model =
               gameOver = isGameOver newHead newTail
           in if gameOver then
               (NotStarted, Cmd.none)
+             else if cherry == Nothing then
+              (Started newSnake cherry, Random.generate Spawn randGen)
              else 
               (Started newSnake cherry, Cmd.none)
 
@@ -163,3 +179,9 @@ isGameOver newHead newTail =
   || snd newHead > (height / 2)     -- hit top
   || fst newHead < (-width / 2)     -- hit left
   || snd newHead < (-height / 2)    -- hit right
+
+spawnCherry : Float -> Float -> Cherry
+spawnCherry randW randH =
+  let x = randW * width - width / 2
+      y = randH * height - height / 2
+  in pos x y |> Just
