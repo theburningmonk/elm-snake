@@ -48,9 +48,11 @@ initSnake =
 
 type alias Cherry = Maybe Position
 
+type alias Score = Int
+
 type Model 
   = NotStarted
-  | Started Snake Cherry
+  | Started Snake Cherry Score
 
 randPos : Random.Generator Position
 randPos = Random.pair (Random.float 0 1) (Random.float 0 1)
@@ -75,7 +77,7 @@ subscriptions model =
     NotStarted ->
       Keyboard.presses KeyPress
 
-    Started _ _ ->
+    Started _ _ _ ->
       Sub.batch [
         Keyboard.presses KeyPress
       , Time.every (Time.inMilliseconds 50) Tick
@@ -90,7 +92,7 @@ view model =
           NotStarted -> 
             [txt "press SPACE to start"]
 
-          Started snake cherry ->
+          Started snake cherry score ->
             let head = rect segmentDim segmentDim |> filled white |> move snake.head 
                 tail = 
                   snake.tail
@@ -98,10 +100,11 @@ view model =
                     rect segmentDim segmentDim
                     |> filled Color.yellow
                     |> move p)
+                scoreLbl = txt (toString score)
              in case cherry of
-                  Nothing -> head::tail
+                  Nothing -> scoreLbl::head::tail
                   Just pos ->
-                    (circle cherryRadius |> filled white |> move pos)::head::tail
+                    (circle cherryRadius |> filled white |> move pos)::scoreLbl::head::tail
 
   in collage width height (bg::content)
      |> Element.toHtml
@@ -113,22 +116,22 @@ update msg model =
     NotStarted ->
       case msg of
         KeyPress 32 ->
-          (Started initSnake Nothing, Cmd.none)
+          (Started initSnake Nothing 0, Cmd.none)
 
         _ ->
           (model, Cmd.none)
 
-    Started snake cherry -> 
+    Started snake cherry score -> 
       case msg of
         KeyPress keyCode ->
           let newDir = getNewDirection keyCode snake.direction
               newSnake = { snake | direction = newDir }
-          in (Started newSnake cherry, Cmd.none)
+          in (Started newSnake cherry score, Cmd.none)
 
         Spawn (spawn, (randX, randY)) ->
           if spawn <= 0.1 then
             let newCherry = spawnCherry randX randY
-            in (Started snake newCherry, Cmd.none)
+            in (Started snake newCherry score, Cmd.none)
           else (model, Cmd.none)
 
         Tick _ -> 
@@ -143,6 +146,11 @@ update msg model =
                   Nothing
                 else 
                   cherry
+              newScore =
+                if ateCherry then
+                  score + 1
+                else 
+                  score
               newTail = 
                 if ateCherry then
                   oldBody
@@ -152,9 +160,9 @@ update msg model =
           in if gameOver then
               (NotStarted, Cmd.none)
              else if newCherry == Nothing then
-              (Started newSnake newCherry, Random.generate Spawn randGen)
+              (Started newSnake newCherry newScore, Random.generate Spawn randGen)
              else 
-              (Started newSnake newCherry, Cmd.none)
+              (Started newSnake newCherry newScore, Cmd.none)
 
 txt : String -> Form
 txt msg =
