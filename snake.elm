@@ -143,7 +143,10 @@ update msg model =
                   Nothing
                 else 
                   cherry
-              newTail = List.take (List.length oldBody-1) oldBody
+              newTail = 
+                if ateCherry then
+                  oldBody
+                else List.take (List.length oldBody-1) oldBody
               newSnake = { snake | head=newHead, tail=newTail }
               gameOver = isGameOver newHead newTail
           in if gameOver then
