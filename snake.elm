@@ -7,6 +7,7 @@ import Collage exposing (..)
 import Element exposing (..)
 import Color exposing (..)
 import Text exposing (..)
+import Char exposing (..)
 
 segmentDim = 15
 cherryRadius = 7.5
@@ -22,6 +23,8 @@ main =
 
 -- step 1: define your Model
 type alias Position = (Float, Float)
+pos : Float -> Float -> Position
+pos = (,)
 
 type Direction 
   = Up
@@ -103,7 +106,18 @@ update msg model =
           (model, Cmd.none)
 
     Started snake -> 
-      (model, Cmd.none)
+      case msg of
+        KeyPress keyCode ->
+          let newDir = getNewDirection keyCode snake.direction
+              newSnake = { snake | direction = newDir }
+          in (Started newSnake, Cmd.none)
+
+        Tick _ -> 
+          let newHead = getNewSegment snake.head snake.direction
+              oldBody = (snake.head::snake.tail)
+              newTail = List.take (List.length oldBody-1) oldBody
+              newSnake = { snake | head=newHead, tail=newTail }
+          in (Started newSnake, Cmd.none)
 
 txt : String -> Form
 txt msg =
@@ -113,3 +127,22 @@ txt msg =
   |> Text.monospace
   |> Element.centered
   |> Collage.toForm
+
+getNewDirection : Char.KeyCode -> Direction -> Direction
+getNewDirection keyCode currentDir =
+  let (changeableDirs, newDir) =
+    case Char.fromCode keyCode of
+      'a' -> ([ Up, Down ], Left)
+      'w' -> ([ Left, Right ], Up)
+      'd' -> ([ Up, Down ], Right)
+      's' -> ([ Left, Right ], Down)
+      _  -> ([], currentDir)
+  in if List.any ((==) currentDir) changeableDirs then newDir else currentDir
+
+getNewSegment : Position -> Direction -> Position
+getNewSegment (x, y) direction =
+  case direction of
+    Up    -> pos x (y+segmentDim)
+    Down  -> pos x (y-segmentDim)
+    Left  -> pos (x-segmentDim) y
+    Right -> pos (x+segmentDim) y
