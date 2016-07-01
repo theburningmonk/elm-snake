@@ -44,10 +44,11 @@ type alias Snake =
 type alias Cherry = Maybe Position
 
 type alias Score = Int
+type alias HighScore = Int
 
 type Model 
   = NotStarted
-  | Started Snake Cherry Score
+  | Started Snake Cherry Score HighScore
 
 -- step 2: define Msg that can trigger updates to Model
 type Msg 
@@ -79,7 +80,7 @@ subscriptions model =
     NotStarted ->
       Keyboard.presses KeyPress
 
-    Started _ _ _ ->
+    Started _ _ _ _ ->
       Sub.batch
         [ Keyboard.presses KeyPress
         , Time.every (Time.inMilliseconds 50) Tick
@@ -94,17 +95,20 @@ view model =
           NotStarted -> 
             [txt "press SPACE to start"]
 
-          Started snake cherry score ->
+          Started snake cherry score hiScore ->
             let head = rect segmentDim segmentDim |> filled white |> move snake.head 
                 tail =
                   snake.tail
                   |> List.map (\pos -> 
                     rect segmentDim segmentDim |> filled yellow |> move pos)
                 scoreLbl = txt (toString score)
+                hiScoreLbl = 
+                  txt ("HI-SCORE " ++ toString hiScore) 
+                  |> move (-width/2 + 50, height/2 - 15) 
             in case cherry of
-                Nothing -> scoreLbl::head::tail
+                Nothing -> scoreLbl::hiScoreLbl::head::tail
                 Just pos ->
-                  (circle cherryRadius |> filled red |> move pos)::scoreLbl::head::tail
+                  (circle cherryRadius |> filled red |> move pos)::scoreLbl::hiScoreLbl::head::tail
   in collage width height (bg::content)
      |> Element.toHtml
 
@@ -115,22 +119,22 @@ update msg model =
     NotStarted ->
       case msg of
         KeyPress 32 -> 
-          (Started initSnake Nothing 0, Cmd.none)
+          (Started initSnake Nothing 0 0, Cmd.none)
         
         _ -> 
           (model, Cmd.none)
 
-    Started snake cherry score ->
+    Started snake cherry score hiScore ->
       case msg of
         KeyPress keyCode ->
           let newDir = getNewDirection keyCode snake.direction
               newSnake = { snake | direction=newDir }
-          in (Started newSnake cherry score, Cmd.none)
+          in (Started newSnake cherry score hiScore, Cmd.none)
 
         Spawn (chance, (randX, randY)) ->
           if chance <= 0.1 then
             let newCherry = spawnCherry randX randY
-            in (Started snake newCherry score, Cmd.none)
+            in (Started snake newCherry score hiScore, Cmd.none)
           else
             (model, Cmd.none)
 
@@ -152,13 +156,25 @@ update msg model =
                 else 
                   (cherry, score)
               gameOver = isGameOver newHead newTail
-              cmd = if ateCherry then playSound () else Cmd.none
+              newModel = 
+                if gameOver then 
+                  NotStarted 
+                else
+                  Started newSnake newCherry newScore hiScore
+              cmd =
+                if gameOver || newCherry /= Nothing then 
+                  Cmd.none
+                else 
+                  Cmd.batch [
+                    (if ateCherry then playSound () else Cmd.none),
+                    Random.generate Spawn generator
+                  ]
           in if gameOver then
               (NotStarted, Cmd.none)
              else if newCherry == Nothing then
-              (Started newSnake newCherry newScore, Cmd.batch [cmd, Random.generate Spawn generator])
+              (Started newSnake newCherry newScore hiScore, Cmd.batch [cmd, Random.generate Spawn generator])
              else 
-              (Started newSnake newCherry newScore, cmd)
+              (Started newSnake newCherry newScore hiScore, cmd)
 
 txt : String -> Form
 txt msg =

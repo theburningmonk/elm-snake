@@ -10674,6 +10674,14 @@ var _user$project$Main$view = function (model) {
 				]);
 		} else {
 			var _p8 = _p6._0;
+			var hiScoreLbl = A2(
+				_evancz$elm_graphics$Collage$move,
+				{ctor: '_Tuple2', _0: ((0 - _user$project$Main$width) / 2) + 50, _1: (_user$project$Main$height / 2) - 15},
+				_user$project$Main$txt(
+					A2(
+						_elm_lang$core$Basics_ops['++'],
+						'HI-SCORE ',
+						_elm_lang$core$Basics$toString(_p6._3))));
 			var scoreLbl = _user$project$Main$txt(
 				_elm_lang$core$Basics$toString(_p6._2));
 			var tail = A2(
@@ -10700,7 +10708,10 @@ var _user$project$Main$view = function (model) {
 				return A2(
 					_elm_lang$core$List_ops['::'],
 					scoreLbl,
-					A2(_elm_lang$core$List_ops['::'], head, tail));
+					A2(
+						_elm_lang$core$List_ops['::'],
+						hiScoreLbl,
+						A2(_elm_lang$core$List_ops['::'], head, tail)));
 			} else {
 				return A2(
 					_elm_lang$core$List_ops['::'],
@@ -10714,7 +10725,10 @@ var _user$project$Main$view = function (model) {
 					A2(
 						_elm_lang$core$List_ops['::'],
 						scoreLbl,
-						A2(_elm_lang$core$List_ops['::'], head, tail)));
+						A2(
+							_elm_lang$core$List_ops['::'],
+							hiScoreLbl,
+							A2(_elm_lang$core$List_ops['::'], head, tail))));
 			}
 		}
 	}();
@@ -10824,9 +10838,9 @@ var _user$project$Main$getNewDirection = F2(
 				})(currentDir),
 			changeableDirs) ? newDir : currentDir;
 	});
-var _user$project$Main$Started = F3(
-	function (a, b, c) {
-		return {ctor: 'Started', _0: a, _1: b, _2: c};
+var _user$project$Main$Started = F4(
+	function (a, b, c, d) {
+		return {ctor: 'Started', _0: a, _1: b, _2: c, _3: d};
 	});
 var _user$project$Main$NotStarted = {ctor: 'NotStarted'};
 var _user$project$Main$init = {ctor: '_Tuple2', _0: _user$project$Main$NotStarted, _1: _elm_lang$core$Platform_Cmd$none};
@@ -10841,26 +10855,27 @@ var _user$project$Main$update = F2(
 			if ((_p17.ctor === 'KeyPress') && (_p17._0 === 32)) {
 				return {
 					ctor: '_Tuple2',
-					_0: A3(_user$project$Main$Started, _user$project$Main$initSnake, _elm_lang$core$Maybe$Nothing, 0),
+					_0: A4(_user$project$Main$Started, _user$project$Main$initSnake, _elm_lang$core$Maybe$Nothing, 0, 0),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			} else {
 				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
 			}
 		} else {
-			var _p23 = _p16._0;
-			var _p22 = _p16._2;
+			var _p24 = _p16._0;
+			var _p23 = _p16._2;
+			var _p22 = _p16._3;
 			var _p21 = _p16._1;
 			var _p18 = msg;
 			switch (_p18.ctor) {
 				case 'KeyPress':
-					var newDir = A2(_user$project$Main$getNewDirection, _p18._0, _p23.direction);
+					var newDir = A2(_user$project$Main$getNewDirection, _p18._0, _p24.direction);
 					var newSnake = _elm_lang$core$Native_Utils.update(
-						_p23,
+						_p24,
 						{direction: newDir});
 					return {
 						ctor: '_Tuple2',
-						_0: A3(_user$project$Main$Started, newSnake, _p21, _p22),
+						_0: A4(_user$project$Main$Started, newSnake, _p21, _p23, _p22),
 						_1: _elm_lang$core$Platform_Cmd$none
 					};
 				case 'Spawn':
@@ -10868,14 +10883,14 @@ var _user$project$Main$update = F2(
 						var newCherry = A2(_user$project$Main$spawnCherry, _p18._0._1._0, _p18._0._1._1);
 						return {
 							ctor: '_Tuple2',
-							_0: A3(_user$project$Main$Started, _p23, newCherry, _p22),
+							_0: A4(_user$project$Main$Started, _p24, newCherry, _p23, _p22),
 							_1: _elm_lang$core$Platform_Cmd$none
 						};
 					} else {
 						return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
 					}
 				default:
-					var newHead = A2(_user$project$Main$getNewSegment, _p23.head, _p23.direction);
+					var newHead = A2(_user$project$Main$getNewSegment, _p24.head, _p24.direction);
 					var ateCherry = function () {
 						var _p19 = _p21;
 						if (_p19.ctor === 'Just') {
@@ -10884,25 +10899,31 @@ var _user$project$Main$update = F2(
 							return false;
 						}
 					}();
-					var newTail = ateCherry ? A2(_elm_lang$core$List_ops['::'], _p23.head, _p23.tail) : A2(
+					var newTail = ateCherry ? A2(_elm_lang$core$List_ops['::'], _p24.head, _p24.tail) : A2(
 						_elm_lang$core$List_ops['::'],
-						_p23.head,
+						_p24.head,
 						A2(
 							_elm_lang$core$List$take,
-							_elm_lang$core$List$length(_p23.tail) - 1,
-							_p23.tail));
-					var _p20 = ateCherry ? {ctor: '_Tuple2', _0: _elm_lang$core$Maybe$Nothing, _1: _p22 + 1} : {ctor: '_Tuple2', _0: _p21, _1: _p22};
+							_elm_lang$core$List$length(_p24.tail) - 1,
+							_p24.tail));
+					var _p20 = ateCherry ? {ctor: '_Tuple2', _0: _elm_lang$core$Maybe$Nothing, _1: _p23 + 1} : {ctor: '_Tuple2', _0: _p21, _1: _p23};
 					var newCherry = _p20._0;
 					var newScore = _p20._1;
-					var cmd = ateCherry ? _user$project$Main$playSound(
-						{ctor: '_Tuple0'}) : _elm_lang$core$Platform_Cmd$none;
 					var newSnake = _elm_lang$core$Native_Utils.update(
-						_p23,
+						_p24,
 						{head: newHead, tail: newTail});
 					var gameOver = A2(_user$project$Main$isGameOver, newHead, newTail);
+					var newModel = gameOver ? _user$project$Main$NotStarted : A4(_user$project$Main$Started, newSnake, newCherry, newScore, _p22);
+					var cmd = (gameOver || (!_elm_lang$core$Native_Utils.eq(newCherry, _elm_lang$core$Maybe$Nothing))) ? _elm_lang$core$Platform_Cmd$none : _elm_lang$core$Platform_Cmd$batch(
+						_elm_lang$core$Native_List.fromArray(
+							[
+								ateCherry ? _user$project$Main$playSound(
+								{ctor: '_Tuple0'}) : _elm_lang$core$Platform_Cmd$none,
+								A2(_elm_lang$core$Random$generate, _user$project$Main$Spawn, _user$project$Main$generator)
+							]));
 					return gameOver ? {ctor: '_Tuple2', _0: _user$project$Main$NotStarted, _1: _elm_lang$core$Platform_Cmd$none} : (_elm_lang$core$Native_Utils.eq(newCherry, _elm_lang$core$Maybe$Nothing) ? {
 						ctor: '_Tuple2',
-						_0: A3(_user$project$Main$Started, newSnake, newCherry, newScore),
+						_0: A4(_user$project$Main$Started, newSnake, newCherry, newScore, _p22),
 						_1: _elm_lang$core$Platform_Cmd$batch(
 							_elm_lang$core$Native_List.fromArray(
 								[
@@ -10911,7 +10932,7 @@ var _user$project$Main$update = F2(
 								]))
 					} : {
 						ctor: '_Tuple2',
-						_0: A3(_user$project$Main$Started, newSnake, newCherry, newScore),
+						_0: A4(_user$project$Main$Started, newSnake, newCherry, newScore, _p22),
 						_1: cmd
 					});
 			}
@@ -10924,8 +10945,8 @@ var _user$project$Main$Tick = function (a) {
 	return {ctor: 'Tick', _0: a};
 };
 var _user$project$Main$subscriptions = function (model) {
-	var _p24 = model;
-	if (_p24.ctor === 'NotStarted') {
+	var _p25 = model;
+	if (_p25.ctor === 'NotStarted') {
 		return _elm_lang$keyboard$Keyboard$presses(_user$project$Main$KeyPress);
 	} else {
 		return _elm_lang$core$Platform_Sub$batch(
